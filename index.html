@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>공생 온라인 농장</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fc5d0}
+#scene{position:fixed;inset:0}canvas{display:block}
+#brand{position:fixed;top:16px;left:16px;color:#fff;font-weight:800;font-size:20px;text-shadow:0 2px 8px #263b2b;pointer-events:none}
+#help{position:fixed;right:16px;top:16px;color:#fff;background:#17251dcc;border:1px solid #ffffff33;border-radius:12px;padding:10px 14px;font-size:12px;line-height:1.6}
+#hint{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);padding:9px 14px;border-radius:20px;background:#17251dcc;color:white;font-size:13px;white-space:nowrap}
+#stick{display:none;position:fixed;left:22px;bottom:24px;width:116px;height:116px;border-radius:50%;background:#17251d66;border:2px solid #ffffff88;touch-action:none}
+#nub{position:absolute;left:33px;top:33px;width:46px;height:46px;border-radius:50%;background:#ffffffbb;border:2px solid white}
+@media(pointer:coarse){#stick{display:block}#help{font-size:11px;max-width:155px}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
+</head>
+<body>
+<div id="scene"></div><div id="brand">공생</div>
+<div id="help">이동: 방향키 ↑ ↓ ← →<br>스마트폰: 왼쪽 조이스틱<br>현재 버전: 농장 기본 공간</div>
+<div id="hint">농장 입구에서 시작합니다</div>
+<div id="stick"><div id="nub"></div></div>
+<script type="module">
+import * as THREE from 'three';
+const host=document.querySelector('#scene');
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x9fc5d0); scene.fog=new THREE.Fog(0x9fc5d0,38,105);
+const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,180);
+const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; host.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe5f5ff,0x66784a,2.0));
+const sun=new THREE.DirectionalLight(0xfff0d2,2.1); sun.position.set(-18,30,15); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); scene.add(sun);
+const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:1});
+const grass=mat(0x78965b), soil=mat(0x92734e), pathMat=mat(0xb99b72), wood=mat(0x805b3b), leaf=mat(0x477b4b), leaf2=mat(0x6f9850), white=mat(0xf0eee5), glass=new THREE.MeshStandardMaterial({color:0x9ccbd0,transparent:true,opacity:.35,roughness:.2});
+function box(w,h,d,m,x,y,z){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;scene.add(o);return o}
+function ground(w,d,m,x,z){return box(w,.35,d,m,x,-.22,z)}
+ground(100,110,grass,0,-28);
+function path(w,d,x,z,rot=0){const o=box(w,.08,d,pathMat,x,.0,z);o.rotation.y=rot;return o}
+path(8,60,0,8); path(8,65,-31,-25); path(8,65,31,-25); path(70,8,0,-57);
+path(9,22,0,-4);
+ // entrance sign
+box(2.7,1.1,.18,wood,0,1.35,18); 
+const sign= new THREE.Mesh(new THREE.BoxGeometry(2.45,.78,.05),white); sign.position.set(0,1.38,17.88);scene.add(sign);
+function textSprite(txt){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle='#24412d';ctx.font='bold 66px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,256,64);const t=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));s.scale.set(2.3,.58,1);return s}
+const signText=textSprite('공생');signText.position.set(0,1.4,17.82);scene.add(signText);
+// front facility, left smart farm 30-pyeong feel, right cafe
+box(27,5.5,12,white,-15,2.75,4); box(19,5.5,12,white,16,2.75,4);
+box(27,.18,.18,wood,-15,5.55,4); box(19,.18,.18,wood,16,5.55,4);
+box(26,3.4,.12,glass,-15,2.55,10.08); box(18,3.4,.12,glass,16,2.55,10.08);
+box(.16,3.6,12,wood,-1,2.5,4);
+for(let i=0;i<4;i++){box(1.8,.25,7,soil,-24+i*6,1,-1);for(let j=0;j<5;j++){const plant=new THREE.Group();const stem=new THREE.Mesh(new THREE.CylinderGeometry(.08,.12,.8,5),mat(0x6d9b48));stem.position.y=.4;plant.add(stem);const leafM=new THREE.Mesh(new THREE.SphereGeometry(.35,6,5),leaf2);leafM.position.y=.8;leafM.scale.set(1,.5,1);plant.add(leafM);plant.position.set(-24+i*6,1.15,-3+j*1.2);scene.add(plant)}}
+for(let i=0;i<5;i++){box(1.5,.2,6,soil, -24+i*12,0,-34);for(let j=0;j<4;j++){const p=new THREE.Mesh(new THREE.SphereGeometry(.42,6,5),i%2?leaf:leaf2);p.position.set(-24+i*12,.55,-36+j*1.4);p.scale.y=1.3;scene.add(p)}}
+const cropNames=['대파','가지','블루베리','토마토','오이'];
+cropNames.forEach((n,i)=>{const s=textSprite(n);s.scale.set(2,.5,1);s.position.set(-24+i*12,1.5,-29);scene.add(s)});
+// trees around perimeter, open spacing
+function tree(x,z,scale=1){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22*scale,.32*scale,2.5*scale,6),wood);trunk.position.set(x,1.25*scale,z);trunk.castShadow=true;scene.add(trunk);for(let k=0;k<3;k++){const crown=new THREE.Mesh(new THREE.ConeGeometry((1.4-k*.18)*scale,2.2*scale,7),k%2?leaf:leaf2);crown.position.set(x,(2.6+k*.72)*scale,z);crown.castShadow=true;scene.add(crown)}}
+for(let z=14;z>-58;z-=9){tree(-39,z,.9+(Math.random()*.25));tree(39,z,.9+(Math.random()*.25))}
+for(let x=-34;x<=34;x+=10)tree(x,-62,.95);
+// benches
+for(const [x,z] of [[-31,-8],[31,-8],[-31,-48],[31,-48]]){box(2,.18,.65,wood,x,.65,z);box(.16,.65,.16,wood,x-.7,.32,z);box(.16,.65,.16,wood,x+.7,.32,z)}
+// simple Korean pavilion and campfire
+for(const [x,z] of [[8,-20]]){for(const dx of [-2,2])for(const dz of [-2,2])box(.22,2.5,.22,wood,x+dx,1.25,z+dz);box(5,.22,5,wood,x,2.6,z);const roof=new THREE.Mesh(new THREE.ConeGeometry(3.7,1.4,4),mat(0x45413a));roof.position.set(x,3.4,z);roof.rotation.y=Math.PI/4;scene.add(roof)}
+const fire=new THREE.Group();for(let i=0;i<3;i++){const f=new THREE.Mesh(new THREE.ConeGeometry(.32,1.2,5),mat(0xe58b36));f.position.set(0,.6,0);f.rotation.z=i*2.1;fire.add(f)}fire.position.set(8,.2,-26);scene.add(fire);
+// avatar
+const avatar=new THREE.Group();scene.add(avatar);
+const skin=mat(0xe7b58b), pants=mat(0x547b55), shirt=mat(0xe2bd70);
+const body=new THREE.Mesh(new THREE.CapsuleGeometry(.38,.75,4,8),shirt);body.position.y=1.25;avatar.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.34,10,8),skin);head.position.y=2.05;avatar.add(head);
+const hat=new THREE.Mesh(new THREE.CylinderGeometry(.43,.43,.12,10),mat(0x9b7442));hat.position.y=2.38;avatar.add(hat);
+const crown=new THREE.Mesh(new THREE.CylinderGeometry(.25,.3,.28,9),mat(0x9b7442));crown.position.y=2.54;avatar.add(crown);
+const leg1=new THREE.Mesh(new THREE.BoxGeometry(.22,.65,.25),pants);leg1.position.set(-.17,.42,0);avatar.add(leg1);
+const leg2=leg1.clone();leg2.position.x=.17;avatar.add(leg2);
+avatar.position.set(0,0,14);
+camera.position.set(0,5,21);camera.lookAt(avatar.position.x,1,avatar.position.z);
+const keys={};addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){keys[e.key]=true;e.preventDefault()}});addEventListener('keyup',e=>keys[e.key]=false);
+let joy={x:0,y:0};const stick=document.querySelector('#stick'),nub=document.querySelector('#nub');let active=false;
+stick.addEventListener('pointerdown',e=>{active=true;stick.setPointerCapture(e.pointerId);moveJoy(e)});
+stick.addEventListener('pointermove',e=>{if(active)moveJoy(e)});
+function moveJoy(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let x=(e.clientX-cx)/42,y=(e.clientY-cy)/42;const l=Math.hypot(x,y);if(l>1){x/=l;y/=l}joy={x,y};nub.style.transform=`translate(${x*35}px,${y*35}px)`}
+function stopJoy(){active=false;joy={x:0,y:0};nub.style.transform='translate(0,0)'}stick.addEventListener('pointerup',stopJoy);stick.addEventListener('pointercancel',stopJoy);
+const clock=new THREE.Clock();
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);let x=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0)+joy.x;let z=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0)+joy.y;const len=Math.hypot(x,z);if(len>.08){x/=Math.max(1,len);z/=Math.max(1,len);avatar.position.x+=x*5*dt;avatar.position.z+=z*5*dt;avatar.position.x=THREE.MathUtils.clamp(avatar.position.x,-35,35);avatar.position.z=THREE.MathUtils.clamp(avatar.position.z,-57,16);avatar.rotation.y=Math.atan2(x,z)}const target=new THREE.Vector3(avatar.position.x,4.7,avatar.position.z+7.8);camera.position.lerp(target,.09);camera.lookAt(avatar.position.x,1.3,avatar.position.z-1);fire.rotation.y+=dt*.6;renderer.render(scene,camera)}
+animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body></html>
